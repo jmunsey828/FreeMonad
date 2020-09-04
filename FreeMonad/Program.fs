@@ -34,14 +34,9 @@ let rec bind f = function
     | Free i -> i |> mapI (bind f) |> Free 
     | Pure x -> f x 
 
-type RoverBuilder()=
-    member this.Bind(x, f) = bind f x
-    member this.Return(x) = Pure x
-    member this.ReturnFrom(x) = x
-    member this.Zero() = Pure()
+let (>=>) f g = f >> bind g 
 
-let rover = new RoverBuilder()
-
+    
 let forwardImp r =  
     match r.direction with 
     | North -> {r with y = (r.y + 1)} 
@@ -86,22 +81,17 @@ let main argv =
     let backward r = Free(Backward (r, Pure))
     let turnLeft r = Free(TurnLeft (r, Pure))
     let turnRight r = Free(TurnRight (r, Pure))
-
-    let program r = rover {
-        //let r = {x=0; y=0; direction=North}
-        let! r = forward r // North (0, 1)
-        let! r = turnLeft r // West (0, 1)
-        let! r = forward r  // West (-1, 1)
-        let! r = turnRight r // North (-1, 1)
-        let! r = turnRight r // East (-1,1 )
-        let! r = backward r // East (-2, 1)
-        return r
-        }
-
+    
+    let program = 
+        forward 
+        >=> turnLeft 
+        >=> forward
+        >=> turnRight
+        >=> turnRight
+        >=> backward
 
     let rover = {x=0; y=0; direction=North}
-    //let rover1 = rover {x=0; y=0; direction=North}
-
+    
     interpret (program rover) |> printfn "%A"
 
     0 // return an integer exit code
